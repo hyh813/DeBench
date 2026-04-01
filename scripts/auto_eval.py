@@ -332,10 +332,10 @@ class EvalState:
     start_time: str = field(default_factory=lambda: datetime.now().isoformat())
     end_time: Optional[str] = None
     config: Dict[str, Any] = field(default_factory=dict)
-    total: int = 0          # 已执行的任务总数
-    completed: int = 0      # 达到最大迭代上限
-    success: int = 0        # 完全成功
-    failed: int = 0         # 失败
+    total: int = 0          # Total number of tracked tasks
+    completed: int = 0      # Reached the max-iteration ceiling
+    success: int = 0        # Fully successful tasks
+    failed: int = 0         # Failed tasks
     tasks: Dict[str, EvalTask] = field(default_factory=dict)
 
     def to_dict(self) -> Dict:
@@ -408,10 +408,10 @@ class StateManager:
 
         os.makedirs(os.path.dirname(os.path.abspath(self.state_file)), exist_ok=True)
 
-        # 并发安全：加文件锁 → 读最新 → 合并 → 写入 → 释放锁
+        # Concurrency-safe write: lock -> read latest -> merge -> write -> unlock
         lock_file = self.state_file + ".lock"
         with open(lock_file, 'w') as lf:
-            fcntl.flock(lf, fcntl.LOCK_EX)  # 排他锁，阻塞等待
+            fcntl.flock(lf, fcntl.LOCK_EX)  # Exclusive blocking lock
             try:
                 self._merge_and_write()
             finally:
@@ -420,8 +420,8 @@ class StateManager:
         self._last_save_time = now
 
     def _merge_and_write(self):
-        """在持有文件锁的情况下，从磁盘读取最新状态，合并当前进程的 tasks，然后写入"""
-        # 1. 从磁盘读取最新状态（可能包含其他进程写入的 tasks）
+        """While holding the file lock, merge the latest on-disk state with the current process state."""
+        # 1. Read the latest on-disk state (it may include writes from other processes).
         disk_state = None
         if os.path.exists(self.state_file):
             try:
@@ -432,32 +432,33 @@ class StateManager:
                 disk_state = None
 
         if disk_state is None:
-            # 磁盘上没有有效状态，直接写入当前内存状态
+            # No valid on-disk state yet; write the current in-memory state directly.
             atomic_write_json_file(self.state_file, self.state.to_dict())
             self._last_loaded_tasks_dict = {k: v.to_dict() for k, v in self.state.tasks.items()}
             return
 
-        # 2. 合并：以磁盘最新的状态为基础，只将当前进程实质发生变化（新增、修改、删除）的 tasks 覆盖进去
+        # 2. Merge onto the latest on-disk state and only overwrite tasks that
+        #    this process actually added, modified, or deleted.
         merged_tasks = dict(disk_state.tasks)
         
         current_task_ids = set(self.state.tasks.keys())
         original_task_ids = set(self._last_loaded_tasks_dict.keys())
         
-        # 处理当前内存中被删除的 tasks
+        # Remove tasks deleted in the current process.
         for task_id in original_task_ids - current_task_ids:
             merged_tasks.pop(task_id, None)
             
-        # 处理新增或被该进程修改的 tasks
+        # Apply new or modified tasks from the current process.
         for task_id, task in self.state.tasks.items():
             if task_id not in original_task_ids:
                 merged_tasks[task_id] = task
             elif task.to_dict() != self._last_loaded_tasks_dict[task_id]:
                 merged_tasks[task_id] = task
 
-        # 3. 重新计算 statistics（基于合并后的完整 tasks）
+        # 3. Recompute statistics from the merged task set.
         merged_state = EvalState(
             version=self.state.version,
-            start_time=disk_state.start_time,  # 保留最早的 start_time
+            start_time=disk_state.start_time,  # Preserve the earliest start_time
             end_time=self.state.end_time,
             config=self.state.config,
             tasks=merged_tasks
@@ -467,10 +468,11 @@ class StateManager:
         merged_state.completed = sum(1 for t in merged_tasks.values() if t.status == "completed")
         merged_state.failed = sum(1 for t in merged_tasks.values() if t.status == "failed")
 
-        # 4. 写入合并后的状态
+        # 4. Persist the merged state.
         atomic_write_json_file(self.state_file, merged_state.to_dict())
 
-        # 5. 同步内存状态并且更新快照（让当前进程也能看到其他进程的 tasks 并以此为准）
+        # 5. Refresh in-memory state and the local snapshot so this process sees
+        #    tasks written by other processes as the new authority.
         self.state = merged_state
         self._last_loaded_tasks_dict = {k: v.to_dict() for k, v in merged_state.tasks.items()}
 
@@ -482,7 +484,9 @@ class StateManager:
 
     def claim_task(self, task_id: str, is_retry: bool, task: Optional[EvalTask] = None, *, step3_only: bool = False) -> bool:
         """
-        原子化抢占任务。抢到返回 True，没抢到（被别人抢了、做完了或不该重试）返回 False。
+        Atomically claim a task.
+        Returns True on success; False if another process owns it, it is already
+        complete, or it should not be retried.
         """
         if self.state is None:
             return False
@@ -491,7 +495,7 @@ class StateManager:
         with open(lock_file, 'w') as lf:
             fcntl.flock(lf, fcntl.LOCK_EX)
             try:
-                # 1. 读出最新磁盘状态
+                # 1. Read the latest on-disk state.
                 disk_state = None
                 if os.path.exists(self.state_file):
                     try:
@@ -502,22 +506,21 @@ class StateManager:
                         pass
                 
                 if disk_state is None:
-                    # 如果这都能进来说明文件损坏或未初始化，不应该直接声明
+                    # If we get here, the state file is broken or uninitialized.
                     return False
 
-                # 2. 检查此任务的最新状态
+                # 2. Check the latest state of this task.
                 disk_task = disk_state.tasks.get(task_id)
                 if not disk_task:
-                    # 如果磁盘上完全没有这个 task（可能是第一次运行）
-                    # 允许当前进程创建并声明为 running
+                    # Brand-new task: allow the current process to create and claim it.
                     pass
                 else:
-                    # 如果磁盘上已经有这个 task，检查其状态
+                    # Existing task: inspect its latest status.
                     status = disk_task.status
                     syn_status = disk_task.syntactic.status
                     sem_status = disk_task.semantic.status
 
-                    # 别人正在做，绝对不能抢
+                    # Another process is actively working on it.
                     if status == "running":
                         return False
 
@@ -526,29 +529,29 @@ class StateManager:
                         if sem_status == "success":
                             return False
                     else:
-                        # 已经做完了，绝对不能抢
+                        # Terminal success states may not be claimed again.
                         if status == "success" or syn_status in ("success", "completed"):
                             return False
 
-                    # 终态失败不应该被 --retry 重新认领
+                    # Terminal quota/context/tool-call failures are not retryable.
                     if not step3_only and syn_status in (
                         StepStatus.CONTEXT_EXCEEDED.value,
                         StepStatus.TOOL_CALL_INVALID.value,
                     ):
                         return False
 
-                    # 如果是 failed/pending，但当前模式不是 retry，也不能抢（说明是跑新任务的进程）
+                    # failed/pending tasks may only be claimed in retry mode,
+                    # except truly new pending tasks.
                     if not step3_only and status in ("failed", "pending") and not is_retry:
-                        # 但是 pending 且 syn_status=pending 且没有被别人认领，其实是新任务，可以抢
                         if not (status == "pending" and syn_status == "pending"):
                             return False
 
-                # 3. 可以抢！将其在磁盘状态中就地标记为 running，并立即写回磁盘
+                # 3. Claim it: mark it running on disk and write back immediately.
                 if task_id in disk_state.tasks:
                     claim_task_obj = disk_state.tasks[task_id]
                 else:
-                    # 首次遇到全新任务时，state.tasks 可能尚未预填充。
-                    # 这种情况下必须使用当前待执行的 task 对象来初始化 running 记录。
+                    # For a truly new task, state.tasks may not have been pre-filled.
+                    # Use the pending task object to initialize the running record.
                     claim_task_obj = task or self.state.tasks.get(task_id)
                     if claim_task_obj is None:
                         return False
@@ -556,7 +559,7 @@ class StateManager:
                 claim_task_obj.mark_claimed(step3_only=step3_only)
                 disk_state.tasks[task_id] = claim_task_obj
                 
-                # 同步更新统计指标
+                # Refresh summary counters.
                 disk_state.active_running = sum(1 for t in disk_state.tasks.values() if t.status == "running")
                 disk_state.total = len(disk_state.tasks)
                 disk_state.success = sum(1 for t in disk_state.tasks.values() if t.status == "success")
@@ -564,7 +567,7 @@ class StateManager:
                 
                 atomic_write_json_file(self.state_file, disk_state.to_dict())
                     
-                # 4. 同步内存中的状态并返回 True
+                # 4. Sync in-memory state and return success.
                 self.state = disk_state
                 self._last_loaded_tasks_dict = {k: v.to_dict() for k, v in disk_state.tasks.items()}
                 return True
@@ -1410,7 +1413,7 @@ class AutoEvaluator:
             task_results_dir=self.semantic_results_dir,
             step3_only=step3_only,
         )
-        # 从环境变量读取 LLM_KEY_INDEX
+        # Read LLM_KEY_INDEX from the environment.
         self.llm_key_index = int(os.environ['LLM_KEY_INDEX']) if os.environ.get('LLM_KEY_INDEX') else None
         self.llm_key_alias = os.environ.get('LLM_KEY_ALIAS')
         self.executor = PipelineExecutor(
@@ -1429,7 +1432,7 @@ class AutoEvaluator:
         """Run the automated evaluation"""
         state = self.state_manager.load()
 
-        # 同步状态文件与结果目录
+        # Reconcile the state file with the results directory.
         print("[AutoEvaluator] Syncing state with results directory...")
         state = self._sync_state_with_results(state)
         self.state_manager.save(force=True)
@@ -1468,17 +1471,17 @@ class AutoEvaluator:
             print(f"[AutoEvaluator] Infrastructure unavailable: {e}")
             return
 
-        # 获取需要重试的 tasks（只重跑未达到 max-iterations 且未 success 的任务）
-        # 排除 success（已成功）和 completed（达到 max-iterations 但链接失败，重跑没意义）
+        # Build the retry set: tasks that are not successful and did not already
+        # reach a terminal non-retryable state.
         retry_task_ids = set()
         for t_id, t in state.tasks.items():
-            # 任务整体状态：只重试 failed/pending/running（不重试 success/completed）
+            # Only retry failed/pending/running tasks, not success/completed.
             if t.status in ('failed', 'pending', 'running'):
                 if self.step3_only:
                     if t.semantic.status != "success":
                         retry_task_ids.add(t_id)
                 else:
-                    # 进一步检查 syntactic 状态：排除已经跑满迭代且编译成功的（completed = Tier2）
+                    # Exclude tasks that already reached the max-iteration linker-failed terminal state.
                     if t.syntactic.status not in (
                         'success',
                         'completed',
@@ -1523,22 +1526,22 @@ class AutoEvaluator:
             if not self.running:
                 break
 
-            # 并行执行时，防抢占的二次聪明跳过 + 原子抢占
+            # In parallel mode, use an atomic claim to avoid duplicate work.
             is_failed_retry = self.retry and task.task_id in retry_task_ids
             
-            # 使用 claim_task 原子抢占任务并立即写入 running 状态
-            # 如果抢占失败（返回 False），说明另一个进程正在做（running）或已经做成功了（success/completed）
-            # 或者当前非 retry 模式但遇到了失败任务。总之，直接跳过即可。
+            # claim_task atomically marks the task as running on disk.
+            # If it returns False, another process owns it, it is already done,
+            # or it should not be retried in the current mode.
             if not self.state_manager.claim_task(task.task_id, is_failed_retry, task=task, step3_only=self.step3_only):
-                print(f"\n[AutoEvaluator] 🎯 任务正在被其他进程执行或已完成，防撞车跳过: {task.task_id}")
+                print(f"\n[AutoEvaluator] Skipping already-claimed or completed task: {task.task_id}")
                 
-                # 为了让最终结束时的统计数据更准，把最新已被别人修改的状态吃紧内存
+                # Pull the latest authoritative task state into memory for accurate final stats.
                 if task.task_id in self.state_manager.state.tasks:
                     task = self.state_manager.state.tasks[task.task_id]
                 continue
 
-            # claim_task 会重新从磁盘加载 state；后续必须始终写回权威 state，
-            # 不能继续修改启动时拿到的旧 state 引用。
+            # claim_task reloads state from disk, so later writes must use the
+            # refreshed authoritative state object, not the stale startup reference.
             self.state_manager.state.config = dict(runtime_config)
             claimed_task = self.state_manager.state.tasks.get(task.task_id)
             if claimed_task:
@@ -1577,7 +1580,7 @@ class AutoEvaluator:
                             task.syntactic.status = StepStatus.FAILED.value
 
                 # Write task to the authoritative state only after completion.
-                # statistics 由 _merge_and_write() 自动从 tasks 计算，无需手动累加
+                # statistics are recomputed from tasks in _merge_and_write()
                 task.clear_claim()
                 self.state_manager.state.config = dict(runtime_config)
                 self.state_manager.state.tasks[task.task_id] = task
@@ -1644,12 +1647,13 @@ class AutoEvaluator:
         if not os.path.exists(report_path):
             return False
 
-        # 如果当前没开 skip_step3 并且 report 中标记了 Step 3 被 skip，并且 syntactic 成功了，那说明要帮它补齐 Semantic
+        # If Step 3 was skipped previously but Step 2 succeeded, semantic outputs
+        # still need to be generated.
         if not self.skip_step3:
              with open(report_path, 'r', encoding='utf-8') as f:
                  content = f.read()
              if "--skip-step3" in content and "✅ Compiled" in content:
-                 return False # 我们需要帮它跑 Step3
+                 return False  # Step 3 still needs to run.
              if not self._semantic_outputs_are_current(task):
                  return False
 
@@ -1661,19 +1665,19 @@ class AutoEvaluator:
 
     def _sync_state_with_results(self, state: EvalState) -> EvalState:
         """
-        验证并同步状态文件与实际结果目录
+        Validate and reconcile the state file with the current results directory.
 
-        1. 清理结果目录不存在的 task
-        2. 同步已有 task 的状态
-        3. 发现并添加新 task（从结果目录）
+        1. Remove tasks whose directories no longer exist.
+        2. Refresh status for existing tasks.
+        3. Discover and add tasks that exist only on disk.
         """
         results_base_dir = os.path.join(self.project_root, self.semantic_results_dir)
 
-        # 确定要扫描的 arch 目录
+        # Determine which arch directories to scan.
         if self.arch_filter:
             archs_to_scan = self.arch_filter
         elif state.tasks:
-            # 从现有 tasks 中获取 arch
+            # Infer arches from the existing task set.
             archs_to_scan = list(set(t.arch for t in state.tasks.values()))
         else:
             archs_to_scan = ['arm64', 'arm32', 'x64', 'x86']
@@ -1683,7 +1687,7 @@ class AutoEvaluator:
         for task in state.tasks.values():
             self._normalize_task_metadata(task)
 
-        # 1. 清理过时的 task（结果目录不存在）
+        # 1. Remove stale tasks whose result directories disappeared.
         tasks_to_remove = []
         for task_id, task in state.tasks.items():
             task_arch = task.arch or task_id.split("/")[0]
@@ -1701,11 +1705,11 @@ class AutoEvaluator:
         for task_id in tasks_to_remove:
             del state.tasks[task_id]
 
-        # 2. 同步已有 task 的状态
+        # 2. Refresh already-known tasks.
         for task_id, task in state.tasks.items():
             self._sync_task_from_results(task)
 
-        # 3. 发现并添加新 task（从结果目录）
+        # 3. Discover new tasks directly from the results directory.
         existing_task_ids = set(state.tasks.keys())
 
         for arch in archs_to_scan:
@@ -1730,13 +1734,13 @@ class AutoEvaluator:
 
                         task_id = f"{arch}/{src}/{bin_name}/{decompiler}"
                         if task_id not in existing_task_ids:
-                            # 发现新 task，从结果目录提取信息
+                            # Found a new task on disk; reconstruct it from results.
                             new_task = self._create_task_from_results(arch, src, bin_name, decompiler)
                             if new_task:
                                 state.tasks[task_id] = new_task
                                 print(f"[Sync] Added new task from results: {task_id}")
 
-        # 4. 重新计算 statistics
+        # 4. Recompute summary statistics.
         state.total = len(state.tasks)
         state.success = sum(1 for t in state.tasks.values() if t.status == "success")
         state.completed = sum(1 for t in state.tasks.values() if t.status == "completed")
@@ -1745,7 +1749,7 @@ class AutoEvaluator:
         return state
 
     def _normalize_task_metadata(self, task: EvalTask):
-        """根据当前 results_dir 修正 legacy state 中缺失或错位的路径元数据。"""
+        """Repair missing or outdated path metadata in legacy state entries."""
         if not all([task.arch, task.src, task.bin_name, task.decompiler]):
             return
 
@@ -1770,7 +1774,7 @@ class AutoEvaluator:
         os.makedirs(os.path.join(semantic_dir, f"native_{task.arch}_bin"), exist_ok=True)
 
     def _sync_task_from_results(self, task: EvalTask):
-        """从结果目录同步 task 的状态"""
+        """Synchronize a task from the existing result files on disk."""
         result_dir = os.path.join(self.project_root, task.result_dir)
         base_result_dir = os.path.join(self.project_root, task.base_result_dir or task.result_dir)
         was_running = task.status == EvalStatus.RUNNING.value
@@ -1782,7 +1786,7 @@ class AutoEvaluator:
 
         task.readability = self._readability_step_from_results(result_dir)
 
-        # 同步 syntactic
+        # Synchronize Step 2 state.
         repair_trace_path = os.path.join(base_result_dir, "syntactic", "repair_trace.json")
         if os.path.exists(repair_trace_path):
             try:
@@ -1819,11 +1823,13 @@ class AutoEvaluator:
                 elif iterations >= self.max_iters:
                     task.syntactic.status = "completed"
                 elif was_running and owner_active:
-                    # 任务仍在执行中时，repair_trace.json 只会反映一个中间态快照。
-                    # 不能因为当前尚未生成二进制就把它降级成 failed，否则并发进程会重复认领。
+                    # While a task is still running, repair_trace.json only shows an
+                    # intermediate snapshot. Do not downgrade it to failed just
+                    # because the binary has not been produced yet.
                     task.syntactic.status = "running"
                 elif was_running and not has_claim_metadata and not report_exists and trace_final_status == "pending":
-                    # legacy state 没有 owner PID 时，只有“纯中间态 trace 且无最终报告”才继续保留 running。
+                    # Legacy states without owner PID only stay running when they
+                    # still look like a pure intermediate trace with no final report.
                     task.syntactic.status = "running"
                 else:
                     task.syntactic.status = "failed"
@@ -1834,7 +1840,7 @@ class AutoEvaluator:
         elif was_running and not has_claim_metadata and not report_exists:
             task.syntactic.status = "running"
 
-        # 同步 semantic
+        # Synchronize Step 3 state.
         metrics_path = os.path.join(result_dir, "semantic", "result_metrics.json")
         if os.path.exists(metrics_path):
             try:
@@ -1858,7 +1864,7 @@ class AutoEvaluator:
         )
         task.semantic.status = normalize_semantic_status(task.semantic.status, step2_only=step2_only)
 
-        # 更新 task.status
+        # Update the overall task.status.
         keep_running = was_running and (
             owner_active or
             (not has_claim_metadata and not report_exists and task.syntactic.status == "running")
@@ -1887,7 +1893,8 @@ class AutoEvaluator:
             if task.semantic.status in ("success", "skipped"):
                 task.status = "success"
             elif keep_running:
-                # 例如当前进程刚完成 syntactic、正在继续做 semantic 时，不能被同步逻辑误降级。
+                # Do not let sync logic downgrade a task that is transitioning from
+                # Step 2 completion into an in-progress Step 3 run.
                 task.status = EvalStatus.RUNNING.value
             else:
                 task.status = "failed"
@@ -1900,11 +1907,11 @@ class AutoEvaluator:
             task.clear_claim()
 
     def _create_task_from_results(self, arch: str, src: str, bin_name: str, decompiler: str) -> Optional[EvalTask]:
-        """从结果目录创建新 task 并提取结果"""
+        """Create a task object from an existing result directory."""
         result_dir = f"{self.semantic_results_dir}/{arch}/{src}/{bin_name}/{decompiler}"
         full_result_dir = os.path.join(self.project_root, result_dir)
 
-        # 检查是否有任何评估结果文件（不强制要求 report.md）
+        # Check whether any evaluation artifacts exist (report.md is not required).
         has_readability = os.path.exists(os.path.join(full_result_dir, "readability"))
         has_syntactic = os.path.exists(os.path.join(full_result_dir, "syntactic", "repair_trace.json"))
         has_semantic = os.path.exists(os.path.join(full_result_dir, "semantic"))
@@ -1912,7 +1919,7 @@ class AutoEvaluator:
         if not (has_readability or has_syntactic or has_semantic):
             return None
 
-        # 创建 task
+        # Build the task object.
         source_file = SOURCE_FILE_MAP.get(src, f"{src}.c")
         task = EvalTask(
             task_id=f"{arch}/{src}/{bin_name}/{decompiler}",
@@ -1921,8 +1928,8 @@ class AutoEvaluator:
             bin_name=bin_name,
             decompiler=decompiler,
             source_path=f"src/{source_file}",
-            decompiled_path=f"decompiled/{decompiler}_out/{arch}/{src}/{bin_name}.c",  # 近似值
-            binary_path=f"build/{arch}/{src}/{bin_name}",  # 近似值
+            decompiled_path=f"decompiled/{decompiler}_out/{arch}/{src}/{bin_name}.c",  # Approximation
+            binary_path=f"build/{arch}/{src}/{bin_name}",  # Approximation
             result_dir=result_dir,
             base_result_dir=(
                 f"{self.results_dir}/{arch}/{src}/{bin_name}/{decompiler}"
@@ -1930,7 +1937,7 @@ class AutoEvaluator:
             ),
         )
 
-        # 从结果目录提取信息
+        # Populate state from the result directory.
         self._sync_task_from_results(task)
 
         return task

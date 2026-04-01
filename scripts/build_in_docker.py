@@ -2,7 +2,7 @@ import os
 import subprocess
 import json
 
-# === 配置矩阵 ===
+# === Build matrix ===
 SOURCES = {
     "1": ["1.c"],
     "2": ["2.c"],
@@ -19,7 +19,7 @@ OPT_LEVELS = ["O0", "O1", "O2", "O3", "Os"]
 ARCHS = ["x86", "x64", "arm32", "arm64", "mips32", "mips64"]
 DEBUG_OPTS = {"yes": "-g", "no": ""}
 
-# === 架构基础映射 ===
+# === Architecture mapping ===
 ARCH_MAP = {
     "x86":    {"cc": "i686-linux-gnu-",       "flags": []}, 
     "x64":    {"cc": "x86_64-linux-gnu-",     "flags": []},
@@ -44,7 +44,7 @@ def compile():
     skipped = 0
     success_count = 0
     
-    # 用于存储构建记录的列表
+    # Stores build records for successful_builds.json
     build_records = []
     
     for src_name, src_files in SOURCES.items():
@@ -55,7 +55,7 @@ def compile():
             os.makedirs(out_dir, exist_ok=True)
 
             for comp in COMPILERS:
-                # 确定基础编译器命令
+                # Resolve the base compiler command
                 if comp == "gcc":
                     tool_suffix = "g++" if is_cpp else "gcc"
                     compiler_bin = ARCH_MAP[arch]["cc"] + tool_suffix
@@ -67,62 +67,62 @@ def compile():
                         current_task += 1
                         dbg_suffix = "g" if dbg_name == "yes" else "no_g"
                         
-                        # 输出文件路径
+                        # Output file path
                         out_filename = f"{src_name}_{comp}_{opt}_{dbg_suffix}"
                         out_path = os.path.join(out_dir, out_filename)
 
-                        # === 构建编译命令 ===
+                        # === Build the compile command ===
                         cmd = [compiler_bin]
                         
-                        # 1. Clang Target
+                        # 1. Clang target
                         if comp == "clang":
                             cmd.append(f"--target={CLANG_TARGETS[arch]}")
                         
-                        # 2. 优化与调试
+                        # 2. Optimization and debug flags
                         cmd.append(f"-{opt}")
                         if dbg_flag:
                             cmd.append(dbg_flag)
                         
-                        # 3. 架构基础 Flag (如 mips static)
+                        # 3. Architecture-specific base flags (for example static MIPS builds)
                         cmd.extend(ARCH_MAP[arch]["flags"])
 
-                        # 4. === 最小化特定 Flag 策略 ===
+                        # 4. Minimal source-specific flag policy
                         
-                        # 针对 5-23.c
+                        # Special handling for 5-23.c
                         if src_name == "5-23":
-                            cmd.append("-std=c99") # 必须: 循环变量定义
-                            cmd.append("-lm")      # 必须: 数学库
+                            cmd.append("-std=c99") # required: loop-variable declarations
+                            cmd.append("-lm")      # required: math library
                             
-                            # 仅 x86 需要 SSE 支持 (源码包含 intrinsics)
+                            # Only x86 needs SSE support because the source uses intrinsics
                             if arch == "x86":
                                 cmd.extend(["-msse2", "-mfpmath=sse"])
                             
-                            # 仅非 x86 架构需要链接 atomic (解决链接错误)
+                            # Non-x86 architectures require libatomic to avoid link failures
                             if arch not in ["x86", "x64"]:
                                 cmd.append("-latomic")
 
-                        # 针对 6.c
+                        # Special handling for 6.c
                         if src_name == "6":
-                            cmd.append("-lpthread") # 必须: 线程库
+                            cmd.append("-lpthread") # required: pthread support
                             
-                            # 根据经验，MIPS/ARM 在 atomic 操作上需要显式链接
+                            # In practice, MIPS and ARM also require explicit atomic linkage
                             if arch not in ["x86", "x64"]:
                                 cmd.append("-latomic")
 
-                        # 5. 输入输出
+                        # 5. Inputs and outputs
                         cmd.extend([os.path.join("src", f) for f in src_files])
                         cmd.extend(["-o", out_path])
                         
-                        # 生成命令字符串
+                        # Serialize the command for metadata
                         cmd_str = " ".join(cmd)
 
-                        # === 增量处理逻辑 ===
+                        # === Incremental-build handling ===
                         
                         file_exists = os.path.exists(out_path) and os.path.getsize(out_path) > 0
                         
                         if file_exists:
                             skipped += 1
-                            # 即使跳过编译，也要记录到 JSON 中，保证记录完整性
+                            # Even when skipping compilation, record it so the metadata stays complete
                             record = {
                                 "cmd": cmd_str,
                                 "bin_path": out_path,
@@ -135,14 +135,14 @@ def compile():
                             build_records.append(record)
                             continue
 
-                        # === 执行编译 ===
+                        # === Execute the compile ===
                         print(f"[{current_task}/{total_tasks}] Compiling {out_filename}...")
                         
                         try:
-                            # 运行编译
+                            # Run compilation
                             subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
                             
-                            # 编译成功，记录信息
+                            # Record successful compilation
                             success_count += 1
                             record = {
                                 "cmd": cmd_str,
@@ -161,7 +161,7 @@ def compile():
                             print(f"FAILED: {out_filename}")
                             print(f"  Error: {short_err}")
 
-    # === 写入 JSON ===
+    # === Write JSON metadata ===
     json_path = "successful_builds.json"
     with open(json_path, "w") as f:
         json.dump(build_records, f, indent=2)

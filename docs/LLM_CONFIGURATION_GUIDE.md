@@ -1,12 +1,12 @@
-# LLM 配置说明
+# LLM Configuration Guide
 
-仓库不包含任何真实 API Key。`config/` 目录只保留可运行模板。
+The repository does not contain real API keys. The `config/` directory only keeps runnable templates.
 
-## 1. 配置文件
+## 1. Configuration Files
 
 ### `config/llm_config.json`
 
-定义 profile 级行为，例如：
+Defines profile-level behavior, including:
 
 - `key_provider`
 - `preferred_key_aliases`
@@ -16,7 +16,7 @@
 
 ### `config/llm_key_inventory.json`
 
-定义具体 key alias，但 `api_key` 使用环境变量占位：
+Defines key aliases, with `api_key` values sourced from environment variables:
 
 ```json
 {
@@ -25,18 +25,18 @@
 }
 ```
 
-`config/config_loader.py` 会自动展开 `${ENV_VAR}`。
+`config/config_loader.py` expands `${ENV_VAR}` automatically.
 
-## 2. 当前模板中的 profile
+## 2. Profiles in the Current Template
 
 - `glm_official`
 - `qwen3.5-plus`
 - `minimax`
 - `deepseek`
 
-## 3. 环境变量
+## 3. Environment Variables
 
-至少按需设置：
+Set the variables you need, for example:
 
 ```bash
 export BINBENCH_GLM_API_KEY=...
@@ -45,9 +45,9 @@ export BINBENCH_MINIMAX_API_KEY=...
 export BINBENCH_SILICONFLOW_API_KEY=...
 ```
 
-## 4. 启动方式
+## 4. Launch Patterns
 
-### 方式 A：launcher 交互选择 key
+### Option A: use the launcher to select a key interactively
 
 ```bash
 python3 scripts/launch_auto_eval.py \
@@ -56,7 +56,7 @@ python3 scripts/launch_auto_eval.py \
   --results-dir results_glm_v4_full
 ```
 
-### 方式 B：直接运行 auto_eval
+### Option B: run `auto_eval.py` directly
 
 ```bash
 LLM_PROFILE=glm_official python3 scripts/auto_eval.py \
@@ -64,15 +64,15 @@ LLM_PROFILE=glm_official python3 scripts/auto_eval.py \
   --results-dir results_glm_v4_full
 ```
 
-### 方式 C：显式指定 key alias
+### Option C: bind to an explicit key alias
 
 ```bash
 LLM_PROFILE=glm_official LLM_KEY_ALIAS=glm-official-1 \
 python3 scripts/auto_eval.py --arch arm64 --results-dir results_glm_v4_full
 ```
 
-## 5. 使用建议
+## 5. Usage Recommendations
 
-- 不要把真实 key 写回 `config/*.json`
-- 本地私有改动建议通过环境变量完成
-- 如果要新增 profile，优先复用现有 provider 名称和模板结构
+- Do not write real keys back into `config/*.json`
+- Keep local private overrides in environment variables
+- When adding a profile, reuse the existing provider names and template structure whenever possible

@@ -1,33 +1,33 @@
-# 项目结构说明
+# Project Structure
 
-本文档只描述当前仍然保留的主目录、核心文件和结果树组织方式。
+This document describes the top-level directories, core files, and results-tree layout that are intentionally retained in the repository.
 
-## 1. 顶层目录
+## 1. Top-Level Directories
 
 ```text
 bindebench/
-├── src/                       # 基准源码
-├── build/                     # 原始二进制与 successful_builds.json
-├── decompiled/                # 各反编译器输出
-├── evaluator/                 # Step1 / Step2 / Step3 核心实现
-├── scripts/                   # 构建、单任务流水线、批量评估脚本
-├── config/                    # LLM 配置模板
-├── prompt/                    # Step1 提示词
-├── results_glm_v4_full/       # GLM 主结果树
-├── results_qwen_v4_full/      # Qwen 主结果树
-├── results_minimax_v4_full/   # MiniMax 主结果树
-├── docs/                      # 核心文档
+├── src/                       # benchmark source corpus
+├── build/                     # original binaries and successful_builds.json
+├── decompiled/                # outputs from each decompiler
+├── evaluator/                 # Step1 / Step2 / Step3 implementations
+├── scripts/                   # build, single-task, and batch orchestration scripts
+├── config/                    # LLM configuration templates
+├── prompt/                    # Step1 prompt assets
+├── results_glm_v4_full/       # GLM results tree
+├── results_qwen_v4_full/      # Qwen results tree
+├── results_minimax_v4_full/   # MiniMax results tree
+├── docs/                      # core documentation
 ├── binbench-arm32.yaml
 ├── binbench-x64.yaml
 ├── binbench-x86.yaml
 └── README.md
 ```
 
-## 2. 数据层
+## 2. Data Layer
 
 ### `src/`
 
-基准源码入口。当前保留：
+Entry point for the benchmark source corpus. The retained set includes:
 
 - `1.c`
 - `2.c`
@@ -39,20 +39,20 @@ bindebench/
 - `6.c`
 - `7.c`
 
-说明：
+Notes:
 
-- `3.c` 与 `3-3_extern_defs.c` 是多源文件 case。
-- `5-1.cpp` 是唯一的 C++ case。
+- `3.c` and `3-3_extern_defs.c` form a multi-source case
+- `5-1.cpp` is the only C++ benchmark case
 
 ### `build/`
 
-保存原始二进制与构建元数据。
+Stores original binaries and build metadata.
 
-关键文件：
+Key file:
 
 - `build/successful_builds.json`
 
-常见路径：
+Common layout:
 
 ```text
 build/<arch>/<src>/<bin_name>
@@ -60,9 +60,9 @@ build/<arch>/<src>/<bin_name>
 
 ### `decompiled/`
 
-保存各反编译器产物。
+Stores outputs from each decompiler.
 
-主目录：
+Main directories:
 
 - `ghidra_out/`
 - `ida_out/`
@@ -70,27 +70,27 @@ build/<arch>/<src>/<bin_name>
 - `BinaryAI_out/`
 - `angr_out/`
 
-常见路径：
+Common layout:
 
 ```text
 decompiled/<tool>_out/<arch>/<src>/<bin_name>.c
 ```
 
-## 3. 实现层
+## 3. Implementation Layer
 
 ### `evaluator/readability/`
 
-Step1 可读性评估实现。
+Step1 readability evaluation.
 
-核心文件：
+Core file:
 
 - `eval_readability.py`
 
 ### `evaluator/syntactic/`
 
-Step2 可重编译性评估实现。
+Step2 recompilability evaluation.
 
-这里只保留当前主线版本：
+The retained mainline implementation is:
 
 - `auto_fixer_v3.py`
 - `utils/compiler.py`
@@ -102,9 +102,9 @@ Step2 可重编译性评估实现。
 
 ### `evaluator/semantic/`
 
-Step3 语义保真实现。
+Step3 semantic-fidelity evaluation.
 
-核心文件：
+Core files:
 
 - `run_instrumentation.py`
 - `analyze_traces.py`
@@ -114,11 +114,11 @@ Step3 语义保真实现。
 - `case_stability_config.json`
 - `target_functions.json`
 
-## 4. 脚本层
+## 4. Script Layer
 
-主线脚本见 [scripts/README.md](../scripts/README.md)。
+Mainline script usage is documented in [scripts/README.md](../scripts/README.md).
 
-最常用的调用链：
+Most common call chain:
 
 ```text
 launch_auto_eval.py
@@ -130,13 +130,13 @@ launch_auto_eval.py
       -> evaluator/semantic
 ```
 
-## 5. 结果树
+## 5. Results Trees
 
 ### `results_{llm}_v4_full/`
 
-这是当前主结果树，三步评估共用同一 task 目录。
+These are the main results trees. All three stages share the same per-task directory.
 
-常见结构：
+Common layout:
 
 ```text
 results_<llm>_v4_full/
@@ -151,24 +151,24 @@ results_<llm>_v4_full/
    └── report.md
 ```
 
-说明：
+Notes:
 
-- `readability/` 中保存 Step1 的原始 `raw_response_*.txt` 和可直接消费的 `test_results_*.json`
-- `syntactic/` 中保存 `repair_trace.json`、编译检查点、修复后的源码与二进制
-- `semantic/` 中保存 stdout、trace、program json、metrics 和分析报告
+- `readability/` stores raw Step1 responses and the `test_results_*.json` files consumed by the pipeline
+- `syntactic/` stores `repair_trace.json`, compile checkpoints, repaired sources, and rebuilt binaries
+- `semantic/` stores stdout captures, traces, program JSONs, metrics, and analysis reports
 
-## 6. 配置层
+## 6. Configuration Layer
 
 ### `config/llm_config.json`
 
-profile 模板，不包含真实密钥。
+Profile templates without real credentials.
 
 ### `config/llm_key_inventory.json`
 
-通过环境变量引用真实 key，例如：
+References real keys via environment variables such as:
 
 - `${BINBENCH_GLM_API_KEY}`
 - `${BINBENCH_DASHSCOPE_API_KEY}`
 - `${BINBENCH_MINIMAX_API_KEY}`
 
-详细说明见 [LLM_CONFIGURATION_GUIDE.md](LLM_CONFIGURATION_GUIDE.md)。
+See [LLM_CONFIGURATION_GUIDE.md](LLM_CONFIGURATION_GUIDE.md) for details.

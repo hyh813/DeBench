@@ -37,7 +37,7 @@ class ErrorParser:
         """
         msg = message.lower()
 
-        # 1. Undeclared Identifier（扩展匹配）
+        # 1. Undeclared Identifier (extended matching)
         if "undeclared identifier" in msg:
             return "Undeclared Identifier"
         if "' undeclared" in msg:  # GCC: 'xxx' undeclared (covers both function and global scope)
@@ -65,7 +65,7 @@ class ErrorParser:
         if "no such file or directory" in msg:
             return "Missing Header"
 
-        # 4. Unknown Type（扩展匹配）
+        # 4. Unknown Type (extended matching)
         if "unknown type name" in msg:
             return "Unknown Type"
         if "unknown type" in msg:

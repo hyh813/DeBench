@@ -19,6 +19,8 @@ FUNCTION_START_RE = re.compile(
 )
 
 UNSTABLE_KEYWORDS = (
+    # These Chinese literals are intentionally preserved because they match
+    # benchmark and result text used to classify unstable cases.
     "未定义",
     "平台相关",
     "子进程",

@@ -5,88 +5,92 @@ from collections import defaultdict
 
 
 # ============================================================
-# ErrorTracker: 追踪错误变化，用于计算新引入错误
+# ErrorTracker: tracks error changes and counts newly introduced errors
 # ============================================================
 
 class ErrorTracker:
     """
-    追踪每轮修复中的错误变化。
-    使用 category:message 签名（而非行号）避免行号偏移导致的虚假膨胀。
-    Phase 切换时的错误变化不计入新引入错误。
+    Track error changes across repair iterations.
+    Use category:message signatures instead of line numbers to avoid false
+    inflation from line-offset drift.
+    Error changes on phase switches are not counted as newly introduced errors.
     """
 
     def __init__(self):
         self.prev_errors_by_phase = {
-            "compile": set(),   # 上一轮 compile 错误签名集合
-            "linker": set(),    # 上一轮 linker 错误签名集合
+            "compile": set(),   # Previous compile-phase error signatures
+            "linker": set(),    # Previous linker-phase error signatures
         }
         self.current_phase = "compile"
         self.total_new_errors = 0
-        self.first_linker_errors = None       # 首次进入 linker 时的错误签名集合
-        self.first_linker_error_count = 0     # 首次进入 linker 时的错误数量
-        self.last_linker_error_count = 0      # 最后一次处于 linker 时的错误数量
-        self.is_first_call = True             # 首次调用标志
+        self.first_linker_errors = None       # Error signatures on first linker entry
+        self.first_linker_error_count = 0     # Error count on first linker entry
+        self.last_linker_error_count = 0      # Error count on the last linker step
+        self.is_first_call = True             # First invocation marker
 
     def update(self, iteration, current_phase, errors):
         """
-        更新错误状态，返回本轮新引入的错误数。
+        Update the error state and return the number of newly introduced errors.
 
         Args:
-            iteration: 当前迭代号
-            current_phase: "compile" 或 "linker"
-            errors: 当前错误列表 (list of dicts with 'category', 'message', etc.)
+            iteration: Current iteration number.
+            current_phase: "compile" or "linker".
+            errors: Current error list (dicts with category/message/etc.).
 
         Returns:
-            new_errors_count: 本轮新引入的错误数（不含 phase 切换和首轮）
+            The number of newly introduced errors for this iteration, excluding
+            phase switches and the first iteration.
         """
-        # 生成当前错误签名集合
+        # Build the current error signature set.
         curr_signatures = {self._make_signature(e) for e in errors}
 
-        # 更新 linker 相关追踪
+        # Update linker-phase tracking.
         if current_phase == "linker":
             self.last_linker_error_count = len(errors)
             if self.first_linker_errors is None:
                 self.first_linker_errors = curr_signatures.copy()
                 self.first_linker_error_count = len(errors)
 
-        # 首次调用：初始化，不计入新引入错误
+        # First call: initialize state but do not count new errors.
         if self.is_first_call:
             self.is_first_call = False
             self.prev_errors_by_phase[current_phase] = curr_signatures
             self.current_phase = current_phase
             return 0
 
-        # Phase 切换检测
+        # Detect phase switches.
         if self.current_phase != current_phase:
-            # Phase 切换时的错误不计入新引入错误
+            # Errors on phase switches are not treated as newly introduced.
             self.prev_errors_by_phase[current_phase] = curr_signatures
             self.current_phase = current_phase
             return 0
 
-        # 同一 Phase 内的错误比较
+        # Compare errors within the same phase.
         prev_signatures = self.prev_errors_by_phase.get(current_phase, set())
 
-        # 计算新增的错误签名
+        # Count newly introduced signatures.
         new_signatures = curr_signatures - prev_signatures
         new_errors_count = len(new_signatures)
 
-        # 累计
+        # Accumulate the total.
         self.total_new_errors += new_errors_count
 
-        # 更新状态
+        # Update the stored state.
         self.prev_errors_by_phase[current_phase] = curr_signatures
 
         return new_errors_count
 
     def _make_signature(self, error):
         """
-        使用 category:message 签名，避免行号偏移导致的虚假膨胀。
-        代价：两个不同位置的相同错误会被合并（对评估影响极小）
+        Use category:message signatures to avoid false inflation from shifted
+        line numbers.
+        Tradeoff: identical errors at different locations are merged, which has
+        negligible impact on evaluation.
         """
         category = error.get('category', 'Unknown')
         message = error.get('message', '').lower().strip()[:60]
 
-        # Linker 错误使用 symbol 信息
+        # Linker errors use symbol information instead of line numbers.
         if error.get('line', 0) == 0 and error.get('symbol'):
             symbol = error.get('symbol')
             error_type = error.get('error_type', 'unknown')
@@ -95,28 +99,28 @@ class ErrorTracker:
         return f"compile:{category}:{message}"
 
     def get_initial_linker_error_count(self):
-        """获取首次进入 linker 时的错误数量"""
+        """Return the error count when the run first entered the linker phase."""
         return self.first_linker_error_count
 
     def get_final_linker_error_count(self):
-        """获取最后一次处于 linker 时的错误数量"""
+        """Return the error count from the last linker-phase iteration."""
         return self.last_linker_error_count
 
 
 # ============================================================
-# 评分辅助函数
+# Scoring helpers
 # ============================================================
 
 def calculate_error_growth_rate(error_trajectory, phase_list):
     """
-    计算错误增长率，跳过 phase 切换点。
+    Compute the error growth rate while skipping phase-switch boundaries.
 
     Args:
-        error_trajectory: 每轮的错误数列表 [28, 27, 26, ...]
-        phase_list: 每轮的 phase ["compile", "compile", ..., "linker", ...]
+        error_trajectory: Error counts by iteration, e.g. [28, 27, 26, ...]
+        phase_list: Phase labels by iteration, e.g. ["compile", ..., "linker"]
 
     Returns:
-        growth_rate: 0.0 - 1.0（仅计算同 phase 内的增长）
+        Growth rate in [0.0, 1.0], computed only within the same phase.
     """
     if len(error_trajectory) <= 1:
         return 0.0
@@ -125,7 +129,7 @@ def calculate_error_growth_rate(error_trajectory, phase_list):
     valid_transitions = 0
 
     for i in range(1, len(error_trajectory)):
-        # 跳过 phase 切换点
+        # Skip transitions that cross phase boundaries.
         if phase_list[i] != phase_list[i - 1]:
             continue
 
@@ -141,7 +145,7 @@ def calculate_error_growth_rate(error_trajectory, phase_list):
 
 def calculate_error_evolution(initial_types, final_types):
     """
-    计算错误类型的演变。
+    Compute how the set of error types evolved across the run.
 
     Args:
         initial_types: {"Undeclared Identifier": 80, "Unknown Type": 40, ...}
@@ -160,7 +164,7 @@ def calculate_error_evolution(initial_types, final_types):
 
 
 def get_grade(score):
-    """将分数转换为等级"""
+    """Convert a numeric score to a letter grade."""
     if score >= 90: return "A+"
     if score >= 85: return "A"
     if score >= 80: return "A-"
@@ -175,26 +179,26 @@ def get_grade(score):
 
 def calculate_tier1_score(compile_iters, linker_iters, growth_rate, regression_count):
     """
-    档位1评分公式（v3.2）
-    编译效率(0-45) + 链接效率(0-35) + 稳定性(0-20)
+    Tier-1 scoring formula (v3.2):
+    compile efficiency (0-45) + linker efficiency (0-35) + stability (0-20)
     """
-    # 编译效率评分 (0-45)
+    # Compile-efficiency score (0-45)
     if compile_iters <= 10:
         compile_efficiency = 45.0
     else:
         compile_efficiency = 45 * math.exp(-0.030 * (compile_iters - 10))
         compile_efficiency = max(10.0, compile_efficiency)
 
-    # 链接效率评分 (0-35)
+    # Linker-efficiency score (0-35)
     if linker_iters <= 5:
         linker_efficiency = 35.0
     else:
         linker_efficiency = 35 * math.exp(-0.045 * (linker_iters - 5))
         linker_efficiency = max(5.0, linker_efficiency)
 
-    # 稳定性评分 (0-20)
-    # 回退惩罚：每次 2.5 分（原 4 分太激进，5 次就扣光）
-    # growth_rate 权重：20（原 25）
+    # Stability score (0-20)
+    # Regression penalty: 2.5 per regression (4 was too aggressive).
+    # growth_rate weight: 20 (was 25 previously).
     stability_score = 20 - growth_rate * 20 - regression_count * 2.5
     stability_score = max(0, stability_score)
 
@@ -211,20 +215,20 @@ def calculate_tier1_score(compile_iters, linker_iters, growth_rate, regression_c
 
 def calculate_tier2_score(compile_iters, linker_reduction_ratio, regression_count):
     """
-    档位2评分公式（v3.2）
-    编译效率(0-50) + 链接进展(0-40) - 回退惩罚(0-10)
+    Tier-2 scoring formula (v3.2):
+    compile efficiency (0-50) + linker progress (0-40) - regression penalty (0-10)
     """
-    # 编译效率评分 (0-50)
+    # Compile-efficiency score (0-50)
     if compile_iters <= 10:
         compile_efficiency = 50.0
     else:
         compile_efficiency = 50 * math.exp(-0.025 * (compile_iters - 10))
         compile_efficiency = max(15.0, compile_efficiency)
 
-    # 链接进展评分 (0-40)
+    # Linker-progress score (0-40)
     linker_progress = linker_reduction_ratio * 40
 
-    # 回退惩罚 (0-10 扣分)
+    # Regression penalty (deduct up to 10 points)
     stability_penalty = min(10, regression_count * 3)
 
     total = compile_efficiency + linker_progress - stability_penalty
@@ -241,8 +245,8 @@ def calculate_tier2_score(compile_iters, linker_reduction_ratio, regression_coun
 
 def calculate_tier3_score(reduction_ratio, growth_rate):
     """
-    档位3评分公式（v3.2）
-    努力评分(0-50) + 稳定性评分(0-50)
+    Tier-3 scoring formula (v3.2):
+    effort score (0-50) + stability score (0-50)
     """
     effort_score = reduction_ratio * 50
     stability_score = (1 - growth_rate) * 50
@@ -258,7 +262,7 @@ def calculate_tier3_score(reduction_ratio, growth_rate):
 
 
 # ============================================================
-# Logger: 日志记录核心类
+# Logger: core trace writer
 # ============================================================
 
 class Logger:
@@ -276,14 +280,14 @@ class Logger:
             "history": []
         }
 
-        # v3.2: 追踪数据
+        # v3.2 tracking fields
         self.error_tracker = ErrorTracker()
-        self.error_trajectory = []     # 每轮错误数
-        self.phase_list = []           # 每轮 phase
-        self.first_compile_success_iter = None    # 首次编译成功的迭代号
-        self.phase_regression_count = 0           # linker → compile 回退次数
-        self.initial_error_count = 0              # 第一轮的错误数
-        self.initial_error_types = {}             # 第一轮的错误类型分布
+        self.error_trajectory = []     # Error count per iteration
+        self.phase_list = []           # Phase label per iteration
+        self.first_compile_success_iter = None    # First successful compile iteration
+        self.phase_regression_count = 0           # Number of linker -> compile regressions
+        self.initial_error_count = 0              # Initial error count
+        self.initial_error_types = {}             # Initial error-type distribution
 
     def init_log(self, file_name):
         self.data["file_name"] = file_name
@@ -293,45 +297,44 @@ class Logger:
                     token_usage=None, time_cost=0.0,
                     errors=None, current_phase="compile"):
         """
-        记录一轮修复历史。
+        Record one repair iteration.
 
         Args:
-            iteration: 迭代号
-            compile_success: 是否编译成功
-            error_summary: 错误摘要 dict (total_count, target, stats, phase)
-            result: 工具调用结果
-            token_usage: Token 使用量
-            time_cost: 耗时
-            errors: 当前错误列表 (list of dicts) — v3.2新增，用于 ErrorTracker
-            current_phase: 当前 phase ("compile" / "linker") — v3.2新增
+            iteration: Iteration index.
+            compile_success: Whether compilation succeeded.
+            error_summary: Error summary dict (total_count, target, stats, phase).
+            result: Tool-call result payload.
+            token_usage: Token usage.
+            time_cost: Time cost.
+            errors: Current error list (v3.2; used by ErrorTracker).
+            current_phase: Current phase ("compile" / "linker") (v3.2).
         """
-        # v3.2: 更新追踪数据
+        # v3.2: update tracking state
         error_count = error_summary.get("total_count", 0)
         self.error_trajectory.append(error_count)
         self.phase_list.append(current_phase)
 
-        # 记录初始状态
+        # Record the initial state.
         if iteration == 1:
             self.initial_error_count = error_count
             self.initial_error_types = dict(error_summary.get("stats", {}))
 
 
-        # 首次编译成功追踪：通过 phase 切换检测
-        # 当首次进入 linker 阶段时，说明 compile 已经成功
+        # Detect the first successful compile via the phase transition into linker.
         if current_phase == "linker" and self.first_compile_success_iter is None:
             self.first_compile_success_iter = iteration
 
-        # Phase 回退检测 (linker → compile)
+        # Detect linker -> compile regressions.
         if len(self.phase_list) >= 2:
             if self.phase_list[-2] == "linker" and self.phase_list[-1] == "compile":
                 self.phase_regression_count += 1
 
-        # ErrorTracker 更新
+        # Update the ErrorTracker.
         new_errors_count = 0
         if errors is not None:
             new_errors_count = self.error_tracker.update(iteration, current_phase, errors)
 
-        # 构建历史条目
+        # Build the history entry.
         entry = {
             "iteration": iteration,
             "compile_success": compile_success,
@@ -339,14 +342,14 @@ class Logger:
             "result": result,
             "token_usage": token_usage,
             "time_cost": time_cost,
-            # v3.2 新增字段
+            # v3.2 fields
             "phase": current_phase,
             "new_errors_introduced": new_errors_count,
         }
         self.data["history"].append(entry)
         self.data["total_iterations"] = iteration
         
-        # v3.3: 统计成功的工具调用次数
+        # v3.3: count successful tool calls
         if result and "tool_results" in result:
             for tr in result.get("tool_results", []):
                 if tr.get("success"):
@@ -367,16 +370,16 @@ class Logger:
 
     def finalize_report(self):
         """
-        v3.2: 生成增强版的 summary，包含三档分类和评分。
+        v3.2: generate the enhanced summary with tier classification and scores.
         """
         if not self.data["history"]:
             self.data["summary"] = {"tier": 3, "final_status": "compile_failed"}
             self.save()
             return
 
-        # ==================== 基础数据 ====================
+        # ==================== base data ====================
 
-        # 汇总 token 和时间
+        # Sum token usage and time.
         total_tokens = 0
         total_time = 0.0
         for entry in self.data["history"]:
@@ -385,14 +388,14 @@ class Logger:
                 total_tokens += tu.get("total_tokens", 0)
             total_time += entry.get("time_cost", 0.0)
 
-        # 确定最终状态和档位
+        # Determine the final status and tier.
         final_status = self.data["final_status"]
 
         if final_status == "success":
             tier = 1
         elif self.first_compile_success_iter is not None:
             tier = 2
-            # 修正 final_status 如果还是旧的 "failed"
+            # Rewrite legacy "failed" into the tier-2 terminal status.
             if final_status == "failed":
                 final_status = "linker_failed"
                 self.data["final_status"] = final_status
@@ -402,7 +405,7 @@ class Logger:
                 final_status = "compile_failed"
                 self.data["final_status"] = final_status
 
-        # 初始状态
+        # Initial state
         initial_state = {
             "error_count": self.initial_error_count,
             "error_types": self.initial_error_types,
@@ -414,12 +417,12 @@ class Logger:
             self.error_trajectory, self.phase_list
         )
 
-        # ==================== 按档位计算指标 ====================
+        # ==================== tier-specific metrics ====================
 
         total_iterations = self.data["total_iterations"]
 
         if tier == 1:
-            # 档位1：成功修复
+            # Tier 1: fully repaired
             compile_iters = self.first_compile_success_iter or total_iterations
             linker_iters = total_iterations - compile_iters
 
@@ -442,7 +445,7 @@ class Logger:
             }
 
         elif tier == 2:
-            # 档位2：编译成功，链接失败
+            # Tier 2: compiles successfully but still fails at link time
             compile_iters = self.first_compile_success_iter or total_iterations
             initial_linker = self.error_tracker.get_initial_linker_error_count()
             final_linker = self.error_tracker.get_final_linker_error_count()
@@ -469,7 +472,7 @@ class Logger:
             }
 
         else:
-            # 档位3：从未编译成功
+            # Tier 3: never reached compile success
             lowest_count = min(self.error_trajectory) if self.error_trajectory else self.initial_error_count
             lowest_iter = self.error_trajectory.index(lowest_count) + 1 if self.error_trajectory else 1
             max_count = max(self.error_trajectory) if self.error_trajectory else self.initial_error_count
@@ -479,7 +482,7 @@ class Logger:
             else:
                 reduction_ratio = 0.0
 
-            # 最终错误类型
+            # Final error-type distribution
             final_types = {}
             for entry in reversed(self.data["history"]):
                 if "stats" in entry.get("error_summary", {}):
@@ -511,7 +514,7 @@ class Logger:
                 "score": calculate_tier3_score(reduction_ratio, growth_rate),
             }
 
-        # ==================== 组装最终 summary ====================
+        # ==================== assemble final summary ====================
 
         self.data["enhanced_summary"] = {
             "tier": tier,
@@ -523,13 +526,13 @@ class Logger:
             f"tier{tier}_metrics": tier_metrics,
         }
 
-        # 保留旧的 summary 格式以保证兼容性
+        # Preserve the legacy summary format for backward compatibility.
         self._generate_legacy_summary()
 
         self.save()
 
     def _generate_legacy_summary(self):
-        """保留旧的 summary 格式以兼容已有分析代码"""
+        """Preserve the legacy summary format for older analysis code."""
         summary = {
             "total_unique_types": 0,
             "type_breakdown": {}

@@ -1,9 +1,10 @@
 """
 LLM Client with Configurable Providers
 
-使用统一配置管理，支持多种 LLM 模型切换。
-支持 GLM-4.7 (非流式 thinking) 和 Qwen3.5-Plus (流式 thinking)。
-支持 API Key 自动切换（额度耗尽时切换到备用 Key）。
+Uses the shared config system to switch across multiple LLM providers.
+Supports GLM-4.7 (non-streaming thinking) and Qwen3.5-Plus
+(streaming thinking).
+Supports automatic API key rotation when quota is exhausted.
 """
 
 from openai import OpenAI
@@ -13,7 +14,7 @@ import json
 import time
 import re
 
-# 添加项目根目录到路径
+# Add the project root to the import path.
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, PROJECT_ROOT)
 
@@ -21,7 +22,7 @@ from config.config_loader import get_llm_client_config
 
 
 # ============================================================
-# API Key 额度耗尽错误检测
+# API key exhaustion / rotation triggers
 # ============================================================
 
 QUOTA_EXHAUSTED_PATTERNS = [
@@ -32,7 +33,7 @@ QUOTA_EXHAUSTED_PATTERNS = [
     r"Free allocated quota exceeded",
     r"quota exceeded",
     r"insufficient quota",
-    r"Rate limit exceeded",  # 某些平台的限流也可能需要切换
+    r"Rate limit exceeded",  # Some providers require key rotation on rate limit.
     r"rate_limit_error",
     r"usage limit exceeded",
 ]
@@ -52,13 +53,13 @@ CONTEXT_EXCEEDED_PATTERNS = [
 
 def is_quota_exhausted_error(error: Exception) -> bool:
     """
-    检测是否为额度耗尽或需要切换 Key 的错误。
+    Detect whether an error indicates quota exhaustion or key rotation.
 
     Args:
-        error: 捕获的异常
+        error: The caught exception.
 
     Returns:
-        True 如果是额度耗尽错误，需要切换 Key
+        True if the error should trigger key switching.
     """
     error_str = str(error)
     for pattern in QUOTA_EXHAUSTED_PATTERNS:
@@ -83,26 +84,26 @@ class QuotaWindowExhaustedError(Exception):
 class LLMClient:
     def __init__(self, profile_name=None):
         """
-        初始化 LLM 客户端。
+        Initialize the LLM client.
 
         Args:
-            profile_name: 可选，指定使用的配置 profile。
-                          如果为 None，使用配置文件中的 active_profile。
-                          如果设置了环境变量 LLM_PROFILE，优先使用环境变量。
+            profile_name: Optional explicit profile name.
+                If None, use the active profile from config.
+                If the LLM_PROFILE environment variable is set, it takes precedence.
         """
-        # 优先使用环境变量
+        # Environment variable overrides the passed profile.
         if profile_name is None:
             profile_name = os.environ.get('LLM_PROFILE')
 
-        # 加载配置
+        # Load config.
         self.config = get_llm_client_config(profile_name)
         self.profile_name = self.config.get('profile_name', 'unknown')
 
-        # API Key 管理（循环切换机制）
+        # API key rotation state.
         self.api_keys = self.config.get('api_keys', [])
         self.api_key_aliases = self.config.get('api_key_aliases', [])
         self.selected_key_alias = self.config.get('selected_key_alias')
-        # 支持 LLM_KEY_INDEX 环境变量指定起始 Key（用于并行执行时分配不同 Key）
+        # Allow LLM_KEY_INDEX to select a starting key for parallel runs.
         key_index_env = os.environ.get('LLM_KEY_INDEX')
         if key_index_env is not None:
             idx = int(key_index_env)
@@ -113,10 +114,10 @@ class LLMClient:
                 self.current_key_index = 0
         else:
             self.current_key_index = 0
-        self.current_round_failed = set()  # 本轮循环中失败的 key（非永久）
-        self.keys_tried_in_round = 0       # 本轮已尝试的 key 数量
+        self.current_round_failed = set()  # Keys that failed in the current round.
+        self.keys_tried_in_round = 0       # Number of keys tried in the current round.
 
-        # 其他配置
+        # Other config fields.
         self.base_url = self.config['base_url']
         self.model = self.config['model']
         self.enable_thinking = self.config.get('enable_thinking', False)
@@ -124,7 +125,7 @@ class LLMClient:
         self.stream_for_thinking = self.config.get('stream_for_thinking', False)
         self.provider_type = self._detect_provider_type()
 
-        # 初始化 OpenAI 客户端
+        # Initialize the OpenAI-compatible client.
         self.client = None
         self._init_client()
 
@@ -134,7 +135,7 @@ class LLMClient:
             print(f"[LLMClient] Key aliases: {', '.join(self.api_key_aliases)}")
 
     def _init_client(self):
-        """使用当前 Key 初始化 OpenAI 客户端"""
+        """Initialize the OpenAI-compatible client with the current key."""
         api_key = self.api_keys[self.current_key_index]
         self.client = OpenAI(
             api_key=api_key,
@@ -152,26 +153,26 @@ class LLMClient:
 
     def try_switch_key(self):
         """
-        尝试切换到下一个 Key（循环切换机制）。
+        Try switching to the next key in the rotation.
 
-        逻辑：
-        1. 将当前 key 标记为"本轮失败"
-        2. 尝试找到下一个"本轮未失败"的 key
-        3. 如果所有 key 都在本轮失败过，则判定为全部失败
+        Logic:
+        1. Mark the current key as failed in this round.
+        2. Find the next key that has not failed in this round.
+        3. If every key has already failed once in this round, stop.
 
         Returns:
-            True 如果成功切换，False 如果所有 Key 本轮都已尝试过
+            True if the switch succeeded, False if all keys were already tried.
         """
-        # 标记当前 key 为本轮失败
+        # Mark the current key as failed in this round.
         self.current_round_failed.add(self.current_key_index)
         self.keys_tried_in_round += 1
 
-        # 检查是否所有 key 都尝试过了
+        # Stop if every key has already been tried in this round.
         if len(self.current_round_failed) >= len(self.api_keys):
             print(f"[LLMClient] All {len(self.api_keys)} API Keys failed in this round")
             return False
 
-        # 寻找下一个本轮未失败的 key
+        # Find the next key that has not failed in this round.
         for i in range(len(self.api_keys)):
             next_idx = (self.current_key_index + 1 + i) % len(self.api_keys)
             if next_idx not in self.current_round_failed:
@@ -183,35 +184,38 @@ class LLMClient:
         return False
 
     def reset_round(self):
-        """重置本轮失败记录（成功请求后调用）"""
+        """Reset per-round key failures after a successful request."""
         if self.current_round_failed:
             print(f"[LLMClient] Request succeeded, resetting round (previously failed: {len(self.current_round_failed)} keys)")
         self.current_round_failed.clear()
         self.keys_tried_in_round = 0
 
     def has_available_key(self):
-        """检查本轮是否还有可用的 Key"""
+        """Check whether any keys remain available in the current round."""
         return len(self.current_round_failed) < len(self.api_keys)
 
     def should_fail_fast_on_quota(self, error: Exception) -> bool:
         """
-        某些固定窗口额度的单 Key 渠道，不适合在客户端做指数退避。
-        例如 minimax 官方 Coding Plan：已知是固定时间窗口重置，继续本地退避只会浪费时间。
+        Some single-key fixed-window providers should fail fast on quota errors
+        instead of using exponential backoff.
+
+        For example, the MiniMax official Coding Plan resets on a fixed time
+        window, so local retries only waste time.
         """
         if not is_quota_exhausted_error(error):
             return False
         return self.provider_type == 'minimax' and len(self.api_keys) == 1
 
     def _detect_provider_type(self):
-        """根据 profile 名称和模型名称检测 provider 类型"""
+        """Infer the provider type from the profile name and model name."""
         explicit_provider_type = self.config.get('provider_type')
         if explicit_provider_type:
             return explicit_provider_type
 
-        # 优先按 profile 名称判断（处理同名模型不同平台的情况）
+        # Prefer the profile name first so we can disambiguate identical model names.
         profile = self.profile_name.lower()
         if profile == 'glm_official':
-            return 'glm_official'  # GLM via 智谱官方平台 Coding Plan
+            return 'glm_official'  # GLM via the official Zhipu Coding Plan.
 
         model = self.model.lower()
         if 'qwen' in model:
@@ -227,23 +231,24 @@ class LLMClient:
         return 'generic'
 
     def _build_extra_body(self):
-        """根据 provider 类型构建 extra_body"""
-        # MiniMax M2.5 是 reasoning model，默认思考且不可关闭
-        # 百炼平台默认自动分离到 reasoning_content，无需额外参数
-        # 官方平台不分离思考内容，让 <think> 标签留在 content 中以保持多轮思维链连续性
+        """Build provider-specific extra_body parameters."""
+        # MiniMax M2.5 is a reasoning model and cannot disable thinking.
+        # Alibaba Bailian already separates reasoning into reasoning_content.
+        # The official endpoint keeps <think> in content to preserve continuity
+        # across multi-turn reasoning traces.
         if self.provider_type == 'minimax':
-            # 旧方案：使用 reasoning_split 分离思考到 reasoning_details 字段
-            # 问题：reasoning_details 是响应专有字段，回传时 API 可能不识别，导致思维链断裂
+            # Old approach: reasoning_split moved thinking into reasoning_details.
+            # That field is provider-specific and can break continuity when sent back.
             # return {"reasoning_split": True}
             return None
         if not self.enable_thinking:
             return None
 
         if self.provider_type == 'qwen':
-            # Qwen 使用直接的 extra_body 结构
+            # Qwen uses a direct extra_body structure.
             return {"enable_thinking": True}
         elif self.provider_type == 'glm':
-            # GLM 使用嵌套的 chat_template_kwargs 结构
+            # GLM uses nested chat_template_kwargs.
             return {
                 "chat_template_kwargs": {
                     "enable_thinking": True,
@@ -251,22 +256,22 @@ class LLMClient:
                 }
             }
         elif self.provider_type == 'glm_official':
-            # GLM-4.7 通过智谱官方平台 Coding Plan
-            # 官方 OpenAI 兼容接口使用 {"thinking": {"type": "enabled"}} 格式
-            # Coding Plan 端点 Preserved Thinking 默认开启，无需设置 clear_thinking
+            # GLM-4.7 on the official Zhipu Coding Plan uses the
+            # {"thinking": {"type": "enabled"}} OpenAI-compatible format.
+            # Preserved Thinking is enabled by default on this endpoint.
             return {
                 "thinking": {
                     "type": "enabled"
                 }
             }
         elif self.provider_type == 'deepseek':
-            # DeepSeek 使用简单的 enable_thinking（通过 SiliconFlow）
+            # DeepSeek uses the simple enable_thinking form.
             return {"enable_thinking": True}
         elif self.provider_type == 'kimi':
-            # Kimi K2.5 通过阿里云百炼，extra_body 格式与 Qwen 一致
+            # Kimi K2.5 on Alibaba Bailian uses the same format as Qwen.
             return {"enable_thinking": True}
         else:
-            # 其他模型默认使用简单结构
+            # Default to the simple structure for other models.
             return {"enable_thinking": True}
 
     def chat(self, messages, tools=None, tool_choice="auto"):
@@ -274,10 +279,10 @@ class LLMClient:
         Executes a chat completion with optional thinking mode.
         Returns (content, reasoning_content, tool_calls, usage)
 
-        对于 Qwen3.5-Plus 等需要流式 thinking 的模型，自动使用流式模式。
-        对于 GLM-4.7 等支持非流式 thinking 的模型，使用非流式模式以提高稳定性。
+        Qwen3.5-Plus and similar models use streaming when thinking is enabled.
+        GLM-4.7 and similar models stay on non-streaming mode for better stability.
         """
-        # 判断是否需要流式模式
+        # Determine whether streaming is required.
         use_stream = self.enable_thinking and self.stream_for_thinking
 
         kwargs = {
@@ -287,7 +292,7 @@ class LLMClient:
             "temperature": self.temperature,
         }
 
-        # 构建 extra_body
+        # Build provider-specific extra_body.
         extra_body = self._build_extra_body()
         if extra_body:
             kwargs["extra_body"] = extra_body
@@ -302,11 +307,11 @@ class LLMClient:
             return self._chat_non_streaming(kwargs)
 
     def _chat_non_streaming(self, kwargs):
-        """非流式处理（GLM/DeepSeek 模式）"""
+        """Non-streaming request path (GLM / DeepSeek style)."""
         backoff_times = [60, 120, 240, 480, 960]
         max_retries = len(backoff_times)
 
-        while True:  # 外层循环：支持 Key 切换后重新尝试
+        while True:  # Outer loop allows a fresh retry after key rotation.
             for attempt in range(max_retries + 1):
                 try:
                     response = self.client.chat.completions.create(**kwargs)
@@ -323,8 +328,8 @@ class LLMClient:
                     if hasattr(message, 'reasoning_content') and message.reasoning_content:
                         reasoning_content = message.reasoning_content
 
-                    # MiniMax 官方平台：思考内容以 <think>...</think> 标签嵌入在 content 中
-                    # 将其提取出来作为 reasoning_content，并从 content 中移除
+                    # MiniMax official responses may embed reasoning in <think> tags.
+                    # Extract it into reasoning_content and remove it from content.
                     if not reasoning_content and self.provider_type == 'minimax' and content:
                         import re
                         think_match = re.search(r'<think>(.*?)</think>', content, re.DOTALL)
@@ -332,8 +337,8 @@ class LLMClient:
                             reasoning_content = think_match.group(1).strip()
                             content = re.sub(r'<think>.*?</think>\s*', '', content, flags=re.DOTALL).strip()
 
-                    # 旧方案：提取 reasoning_details（MiniMax 官方平台使用 reasoning_split=True 时的字段）
-                    # 问题：reasoning_details 是数组格式 [{"text": "..."}]，转换为字符串后回传会破坏思维链
+                    # Old approach: read reasoning_details when reasoning_split=True.
+                    # That field is an array and breaks continuity when echoed back.
                     # if not reasoning_content and hasattr(message, 'reasoning_details') and message.reasoning_details:
                     #     if isinstance(message.reasoning_details, list):
                     #         reasoning_content = "\n".join(
@@ -366,12 +371,12 @@ class LLMClient:
                         usage["completion_tokens"] = response.usage.completion_tokens
                         usage["total_tokens"] = response.usage.total_tokens
 
-                    # 成功！重置本轮失败记录
+                    # Success: reset the per-round failure state.
                     self.reset_round()
                     return content, reasoning_content, tool_calls, usage
 
                 except Exception as e:
-                    # 检查是否为上下文超长错误（不重试，直接抛出）
+                    # Context-window errors should not be retried.
                     if is_context_exceeded_error(e):
                         print(f"[LLMClient] Context length exceeded, skipping retries")
                         raise Exception(f"Context length exceeded: {e}") from e
@@ -380,32 +385,32 @@ class LLMClient:
                         print("[LLMClient] Quota window exhausted for minimax official, skipping internal retries")
                         raise QuotaWindowExhaustedError(f"Quota window exhausted: {e}") from e
 
-                    # 指数退避重试
+                    # Exponential-backoff retry.
                     if attempt < max_retries:
                         wait_time = backoff_times[attempt]
                         print(f"LLM Call Failed: {e}")
                         print(f"Retrying in {wait_time} seconds... (Attempt {attempt + 1}/{max_retries})")
                         time.sleep(wait_time)
                     else:
-                        # 重试耗尽，尝试切换 Key
+                        # Retries exhausted: try the next key.
                         print(f"LLM Call Failed after {max_retries} retries: {e}")
                         if self.try_switch_key():
-                            # 切换成功，继续外层循环（重置 attempt）
+                            # Key switch succeeded: restart the outer retry loop.
                             continue
                         else:
-                            # 所有 Key 本轮都已尝试过
+                            # Every key has already failed in this round.
                             raise Exception("All API Keys exhausted after full round") from e
-            break  # 正常退出（不应该到达这里）
+            break  # Defensive exit; normal control should return earlier.
 
     def _chat_streaming(self, kwargs):
-        """流式处理（Qwen thinking 模式必需）"""
-        # 添加 stream_options 以获取 usage 信息
+        """Streaming request path (required for Qwen thinking mode)."""
+        # Include stream_options so usage is returned in the final chunk.
         kwargs["stream_options"] = {"include_usage": True}
 
         backoff_times = [60, 120, 240, 480, 960]
         max_retries = len(backoff_times)
 
-        while True:  # 外层循环：支持 Key 切换后重新尝试
+        while True:  # Outer loop allows a fresh retry after key rotation.
             for attempt in range(max_retries + 1):
                 try:
                     response = self.client.chat.completions.create(**kwargs)
@@ -420,7 +425,7 @@ class LLMClient:
                     }
 
                     for chunk in response:
-                        # 处理 usage（在最后一个 chunk 中）
+                        # Usage is reported in the final chunk.
                         if hasattr(chunk, 'usage') and chunk.usage:
                             usage["prompt_tokens"] = chunk.usage.prompt_tokens
                             usage["completion_tokens"] = chunk.usage.completion_tokens
@@ -433,15 +438,15 @@ class LLMClient:
                         if not delta:
                             continue
 
-                        # 收集 reasoning_content
+                        # Accumulate reasoning_content.
                         if hasattr(delta, 'reasoning_content') and delta.reasoning_content:
                             reasoning_content += delta.reasoning_content
 
-                        # 收集 content
+                        # Accumulate content.
                         if hasattr(delta, 'content') and delta.content:
                             content += delta.content
 
-                        # 处理 tool calls（需要累积）
+                        # Tool calls arrive incrementally and must be accumulated.
                         if hasattr(delta, 'tool_calls') and delta.tool_calls:
                             for tc in delta.tool_calls:
                                 idx = tc.index
@@ -456,7 +461,7 @@ class LLMClient:
                                     if tc.function.arguments:
                                         tool_calls_chunks[idx]["arguments"] += tc.function.arguments
 
-                    # 组装 tool_calls
+                    # Reconstruct tool_calls from streamed chunks.
                     tool_calls = None
                     if tool_calls_chunks:
                         tool_calls = []
@@ -471,12 +476,12 @@ class LLMClient:
                                 "type": "function"
                             })
 
-                    # 成功！重置本轮失败记录
+                    # Success: reset the per-round failure state.
                     self.reset_round()
                     return content, reasoning_content, tool_calls, usage
 
                 except Exception as e:
-                    # 检查是否为上下文超长错误（不重试，直接抛出）
+                    # Context-window errors should not be retried.
                     if is_context_exceeded_error(e):
                         print(f"[LLMClient] Context length exceeded, skipping retries")
                         raise Exception(f"Context length exceeded: {e}") from e
@@ -485,19 +490,19 @@ class LLMClient:
                         print("[LLMClient] Quota window exhausted for minimax official, skipping internal retries")
                         raise QuotaWindowExhaustedError(f"Quota window exhausted: {e}") from e
 
-                    # 指数退避重试
+                    # Exponential-backoff retry.
                     if attempt < max_retries:
                         wait_time = backoff_times[attempt]
                         print(f"LLM Call Failed: {e}")
                         print(f"Retrying in {wait_time} seconds... (Attempt {attempt + 1}/{max_retries})")
                         time.sleep(wait_time)
                     else:
-                        # 重试耗尽，尝试切换 Key
+                        # Retries exhausted: try the next key.
                         print(f"LLM Call Failed after {max_retries} retries: {e}")
                         if self.try_switch_key():
-                            # 切换成功，继续外层循环（重置 attempt）
+                            # Key switch succeeded: restart the outer retry loop.
                             continue
                         else:
-                            # 所有 Key 本轮都已尝试过
+                            # Every key has already failed in this round.
                             raise Exception("All API Keys exhausted after full round") from e
-            break  # 正常退出（不应该到达这里）
+            break  # Defensive exit; normal control should return earlier.

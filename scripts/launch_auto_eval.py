@@ -137,7 +137,7 @@ def render_key_rows(rows: List[Dict], profile_name: str, provider: str):
                 f"      pid={lease.get('pid')} profile={lease.get('llm_profile')} "
                 f"results={lease.get('results_dir')} cmd={lease.get('command_summary')}"
             )
-    print("\n  * = profile 的默认优先 key")
+    print("\n  * = default preferred key for this profile")
 
 
 def choose_key_interactively(rows: List[Dict]) -> Dict:

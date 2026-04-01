@@ -1,8 +1,8 @@
-# AUTO_EVAL 实现说明
+# AUTO_EVAL Implementation Notes
 
-`scripts/auto_eval.py` 是批量评估主入口。
+`scripts/auto_eval.py` is the main batch-evaluation entrypoint.
 
-## 1. 调用链
+## 1. Call Chain
 
 ```text
 launch_auto_eval.py
@@ -14,42 +14,42 @@ launch_auto_eval.py
       -> evaluator/semantic/analyze_traces.py
 ```
 
-## 2. 主行为
+## 2. Main Responsibilities
 
-`auto_eval.py` 负责：
+`auto_eval.py` is responsible for:
 
-- 扫描目标架构下可评估任务
-- 维护 `eval_state_{arch}.json`
-- 在宿主机执行 Step1
-- 对目标 Lima 实例做 guest preflight
-- 调度 Lima 实例执行 Step2 / Step3
-- 在失败时按策略重试
-- 在 `--step3-only` 模式下复用既有 Step2 成果
+- scanning evaluable tasks for the selected architecture
+- maintaining `eval_state_{arch}.json`
+- running Step1 on the host
+- performing guest preflight for the target Lima instance
+- dispatching Step2 and Step3 inside the guest
+- retrying failures according to policy
+- reusing existing Step2 outputs in `--step3-only` mode
 
-## 3. 结果树约定
+## 3. Results Tree Convention
 
-主结果树固定为：
+The main results trees are:
 
 - `results_glm_v4_full/`
 - `results_qwen_v4_full/`
 - `results_minimax_v4_full/`
 
-每个结果树根目录下维护四个状态文件：
+Each results root maintains four state files:
 
 - `eval_state_arm64.json`
 - `eval_state_arm32.json`
 - `eval_state_x64.json`
 - `eval_state_x86.json`
 
-## 4. Step1 / Step2 / Step3 的当前口径
+## 4. Current Step Boundary
 
-- Step1 现在由宿主机执行，不再随 `run_pipeline_in_docker.py` 一起进入 guest
-- Step2 与 Step3 继续在对应 Lima guest 内执行，并共享同一 task 目录
-- 主结果树中的 `readability/` 产物会直接被后续步骤复用，不再保留单独的 Step1 归档目录
+- Step1 runs on the host and no longer enters the guest through `run_pipeline_in_docker.py`
+- Step2 and Step3 still run inside the matching Lima guest and share the same task directory
+- The `readability/` outputs in the main results tree are reused directly by downstream steps
 
-## 5. 常见命令
+## 5. Common Commands
 
-### 启动一条批量评估
+### Launch a filtered batch run
 
 ```bash
 python3 scripts/auto_eval.py \
@@ -61,7 +61,7 @@ python3 scripts/auto_eval.py \
   --results-dir runs/qwen_batch
 ```
 
-### 只补跑 Step3
+### Rerun Step3 only
 
 ```bash
 python3 scripts/auto_eval.py \
@@ -71,9 +71,9 @@ python3 scripts/auto_eval.py \
   --results-dir results_glm_v4_full
 ```
 
-## 6. 状态文件核心字段
+## 6. Core State-File Fields
 
-每个 task 至少包含：
+Each task contains at least:
 
 - `status`
 - `steps.readability.status`
@@ -84,11 +84,11 @@ python3 scripts/auto_eval.py \
 - `steps.semantic.status`
 - `steps.semantic.quality_status`
 
-## 7. 当前仓库边界
+## 7. Current Repository Boundary
 
-以下历史维护链路已从当前主线移除：
+The following historical maintenance paths are intentionally removed from the mainline tree:
 
-- 子集 rerun 合并工具
-- Step3 rerun supervisor
-- 论文统计/画图脚本
-- 历史状态修补与专项审计工具
+- subset rerun / merge tooling
+- Step3 rerun supervisor tooling
+- paper-specific statistics and plotting scripts
+- legacy state repair and audit utilities

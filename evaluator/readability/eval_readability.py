@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""LLM-as-judge可读性评估测试"""
+"""LLM-as-judge readability evaluation."""
 
 import os
 import sys
@@ -7,31 +7,31 @@ import json
 import time
 from datetime import datetime
 
-# 添加项目路径
+# Add the Step2 package path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../syntactic'))
 from utils.llm_client import LLMClient
 
-# ============ 配置 ============
+# ============ Configuration ============
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
 PROMPT_FILE = f"{PROJECT_ROOT}/prompt/CodeReadability"
 SOURCE_FILE = f"{PROJECT_ROOT}/src/1.c"
 # Support dynamic output directory via environment variable
 RESULTS_DIR = os.environ.get("BINBENCH_READABILITY_OUTPUT") or f"{PROJECT_ROOT}/results/readability"
 
-# 全局 LLM 客户端（延迟初始化）
+# Global LLM client (lazy initialization)
 _llm_client = None
 
 def get_llm_client():
-    """获取 LLM 客户端（单例）"""
+    """Get the singleton LLM client."""
     global _llm_client
     if _llm_client is None:
         _llm_client = LLMClient()
     return _llm_client
 
-# ============ 核心函数 ============
+# ============ Core helpers ============
 
 def load_prompts():
-    """加载系统提示词和用户模板"""
+    """Load the system prompt and user template."""
     with open(PROMPT_FILE, 'r', encoding='utf-8') as f:
         content = f.read()
 
@@ -42,19 +42,19 @@ def load_prompts():
     return system_prompt, user_template
 
 def build_user_prompt(source_code, decompiled_code):
-    """构建用户提示词（简化版：只填充代码部分）"""
+    """Build the user prompt by filling only the code-related placeholders."""
     _, user_template = load_prompts()
 
-    # 提取第一个函数名
+    # Extract the first function name
     import re
     func_match = re.search(r'^\s*(?:static\s+)?(?:\w+\s+)+(\w+)\s*\(', source_code, re.MULTILINE)
     func_name = func_match.group(1) if func_match else "test_function"
 
-    # 计算行数
+    # Count lines of code
     source_loc = len(source_code.split('\n'))
     decompiled_loc = len(decompiled_code.split('\n'))
 
-    # 简单替换主要占位符
+    # Fill the main placeholders
     prompt = user_template
     replacements = {
         "{original_function_name}": func_name,
@@ -79,7 +79,7 @@ def build_user_prompt(source_code, decompiled_code):
     return prompt
 
 def call_llm(system_prompt, user_prompt):
-    """调用LLM API（使用统一 LLMClient）"""
+    """Call the LLM API through the shared `LLMClient` wrapper."""
     client = get_llm_client()
 
     messages = [
@@ -91,27 +91,27 @@ def call_llm(system_prompt, user_prompt):
         content, reasoning, tool_calls, usage = client.chat(messages)
         return content, usage
     except Exception as e:
-        print(f"LLM调用失败: {e}")
+        print(f"LLM call failed: {e}")
         raise
 
 def extract_scores(response):
-    """从响应中提取分数（处理多种LLM输出格式）"""
+    """Extract scores from the response while handling multiple LLM output formats."""
     import re
 
     scores = {}
 
-    # 定义多种格式模式，LLM响应格式非常不一致
+    # Support multiple response formats because LLM outputs are not fully consistent
 
-    # 格式1: "**1. Variable Naming Quality:** Score: 7/10" (分数在同一行)
+    # Format 1: score appears on the same line
     pattern1 = r'\*{2}(\d+)\.\s+([^:]+?):\*{2}\s+Score:\s*(\d+(?:\.\d+)?)\s*/10'
 
-    # 格式2: "**1. Variable Naming Quality (10% weight)** 换行 Score: 7/10" (分数在下一行)
+    # Format 2: score appears on the next line
     pattern2 = r'\*{2}(\d+)\.\s+(.+?)\*{2}\s*\nScore:\s*(\d+(?:\.\d+)?)\s*/10'
 
-    # 格式3: "#### 1. Variable Naming Quality (10% weight) 换行 **Score: 4/10**"
+    # Format 3: markdown heading followed by a bold score on the next line
     pattern3 = r'#{2,4}\s*(\d+)\.\s+[^*]+?\s*\n\*{2}Score:\s*(\d+(?:\.\d+)?)\s*/10\*{2}'
 
-    # 按优先级尝试各种格式
+    # Try patterns in priority order
     patterns = [
         (pattern1, "format1"),
         (pattern2, "format2"),
@@ -125,13 +125,13 @@ def extract_scores(response):
             try:
                 dim_num = int(match.group(1))
 
-                # 如果已经提取过这个维度，跳过
+                # Skip dimensions that have already been extracted
                 if dim_num in scores:
                     continue
 
-                # 根据格式提取名称和分数
+                # Extract the dimension label and score according to the matched format
                 if fmt_name == "format3":
-                    # 格式3没有名称字段，使用通用名称
+                    # Format 3 does not include an explicit dimension label
                     dim_name = f"Dimension {dim_num}"
                     score = float(match.group(2))
                 else:
@@ -144,10 +144,10 @@ def extract_scores(response):
                     "score": score
                 }
             except (ValueError, IndexError) as e:
-                # 忽略解析错误的匹配
+                # Ignore malformed matches
                 continue
 
-    # 提取总分 - 支持多种格式
+    # Extract the overall score with flexible patterns
     overall_patterns = [
         r'### Overall Readability Score:\s*\*{2}(\d+(?:\.\d+)?)\s*/10\*{2}',  # ### Overall: **X/10**
         r'- \*{2}Overall Readability Score:\*{2}\s*(\d+(?:\.\d+)?)\s*/10',   # - **Overall:** X/10
@@ -165,7 +165,7 @@ def extract_scores(response):
     return scores, overall_score
 
 
-# Level 与维度的映射关系
+# Mapping from levels to dimensions
 LEVEL_DIMENSIONS = {
     "L1_lexical_clarity": [1, 2, 3, 4],
     "L2_structural_intelligibility": [5, 6, 7, 8],
@@ -174,7 +174,7 @@ LEVEL_DIMENSIONS = {
     "L5_contextual_coherence": [16, 17, 18]
 }
 
-# 维度名称映射
+# Dimension name mapping
 DIMENSION_NAMES = {
     1: "variable_naming_quality",
     2: "function_naming_quality",
@@ -199,7 +199,7 @@ DIMENSION_NAMES = {
 
 def extract_scores_enhanced(response):
     """
-    增强版分数提取，返回完整结构化数据
+    Enhanced score extraction that returns a structured payload.
 
     Returns:
         {
@@ -213,23 +213,23 @@ def extract_scores_enhanced(response):
             },
             "dimensions": {
                 "1_variable_naming_quality": float,
-                ... (18 个维度)
+                ... (18 dimensions)
             }
         }
     """
-    # 使用原有的分数提取函数
+    # Reuse the basic score extractor
     dimension_scores, overall_score = extract_scores(response)
 
-    # 构建维度分数字典
+    # Build the dimension score dictionary
     dimensions = {}
     for dim_num in range(1, 19):
         dim_key = f"{dim_num}_{DIMENSION_NAMES.get(dim_num, f'dimension_{dim_num}')}"
         if dim_num in dimension_scores:
             dimensions[dim_key] = dimension_scores[dim_num]["score"]
         else:
-            dimensions[dim_key] = None  # 未找到分数
+            dimensions[dim_key] = None  # score not found
 
-    # 计算 Level 分数（各维度平均值）
+    # Compute level scores as means over the associated dimensions
     levels = {}
     for level_name, dim_nums in LEVEL_DIMENSIONS.items():
         scores = []
@@ -250,13 +250,13 @@ def extract_scores_enhanced(response):
 
 def evaluate_readability(source_path: str, decompiled_path: str, eval_id: str, output_dir: str) -> dict:
     """
-    评估单个文件对并返回完整结果
+    Evaluate a single source/decompiled pair and return the structured result.
 
     Args:
-        source_path: 源码文件路径
-        decompiled_path: 反编译文件路径
-        eval_id: 评估 ID
-        output_dir: 输出目录
+        source_path: path to the source file
+        decompiled_path: path to the decompiled file
+        eval_id: evaluation identifier
+        output_dir: output directory
 
     Returns:
         {
@@ -268,9 +268,9 @@ def evaluate_readability(source_path: str, decompiled_path: str, eval_id: str, o
             "time_cost_seconds": float
         }
     """
-    print(f"\n[{eval_id}] 评估中...")
+    print(f"\n[{eval_id}] Evaluating...")
 
-    # 读取文件
+    # Read input files
     with open(source_path, 'r', encoding='utf-8') as f:
         source_code = f.read()
     with open(decompiled_path, 'r', encoding='utf-8') as f:
@@ -278,16 +278,16 @@ def evaluate_readability(source_path: str, decompiled_path: str, eval_id: str, o
 
     source_lines = len(source_code.split('\n'))
     decompiled_lines = len(decompiled_code.split('\n'))
-    print(f"  源码行数: {source_lines}")
-    print(f"  反编译行数: {decompiled_lines}")
+    print(f"  Source LOC: {source_lines}")
+    print(f"  Decompiled LOC: {decompiled_lines}")
 
-    # 构建提示词
+    # Build prompts
     system_prompt, _ = load_prompts()
     user_prompt = build_user_prompt(source_code, decompiled_code)
 
-    # 调用LLM
+    # Call the LLM
     client = get_llm_client()
-    print(f"  调用LLM ({client.model})...")
+    print(f"  Calling LLM ({client.model})...")
 
     start_time = time.time()
     response_content, token_usage = call_llm(system_prompt, user_prompt)
@@ -295,21 +295,21 @@ def evaluate_readability(source_path: str, decompiled_path: str, eval_id: str, o
 
     time_cost = end_time - start_time
 
-    # 使用增强版分数提取
+    # Extract the enhanced structured scores
     scores_data = extract_scores_enhanced(response_content)
 
-    # 确保输出目录存在
+    # Ensure the output directory exists
     os.makedirs(output_dir, exist_ok=True)
 
-    # 保存原始响应用于调试
+    # Save the raw response for debugging
     debug_file = os.path.join(output_dir, f"raw_response_{eval_id}.txt")
     with open(debug_file, 'w', encoding='utf-8') as f:
         f.write(response_content)
 
-    print(f"  总分: {scores_data['overall_score']}/10")
-    print(f"  耗时: {time_cost:.2f}s")
-    print(f"  Token使用: {token_usage['total_tokens']} (Prompt: {token_usage['prompt_tokens']}, Completion: {token_usage['completion_tokens']})")
-    print(f"  原始响应已保存: {debug_file}")
+    print(f"  Overall score: {scores_data['overall_score']}/10")
+    print(f"  Time: {time_cost:.2f}s")
+    print(f"  Token usage: {token_usage['total_tokens']} (Prompt: {token_usage['prompt_tokens']}, Completion: {token_usage['completion_tokens']})")
+    print(f"  Raw response saved to: {debug_file}")
 
     return {
         "eval_id": eval_id,
@@ -325,10 +325,10 @@ def evaluate_readability(source_path: str, decompiled_path: str, eval_id: str, o
     }
 
 def evaluate_pair(source_path, decompiled_path, eval_id):
-    """评估单个源码/反编译对"""
-    print(f"\n[{eval_id}] 评估中...")
+    """Evaluate a single source/decompiled pair."""
+    print(f"\n[{eval_id}] Evaluating...")
 
-    # 读取文件
+    # Read input files
     with open(source_path, 'r', encoding='utf-8') as f:
         source_code = f.read()
     with open(decompiled_path, 'r', encoding='utf-8') as f:
@@ -336,16 +336,16 @@ def evaluate_pair(source_path, decompiled_path, eval_id):
 
     source_lines = len(source_code.split('\n'))
     decompiled_lines = len(decompiled_code.split('\n'))
-    print(f"  源码行数: {source_lines}")
-    print(f"  反编译行数: {decompiled_lines}")
+    print(f"  Source LOC: {source_lines}")
+    print(f"  Decompiled LOC: {decompiled_lines}")
 
-    # 构建提示词
+    # Build prompts
     system_prompt, _ = load_prompts()
     user_prompt = build_user_prompt(source_code, decompiled_code)
 
-    # 调用LLM
+    # Call the LLM
     client = get_llm_client()
-    print(f"  调用LLM ({client.model})...")
+    print(f"  Calling LLM ({client.model})...")
 
     start_time = time.time()
     response_content, token_usage = call_llm(system_prompt, user_prompt)
@@ -353,19 +353,19 @@ def evaluate_pair(source_path, decompiled_path, eval_id):
 
     time_cost = end_time - start_time
 
-    # 提取分数
+    # Extract scores
     dimension_scores, overall_score = extract_scores(response_content)
 
-    # 保存原始响应用于调试
+    # Save the raw response for debugging
     debug_file = f"{RESULTS_DIR}/raw_response_{eval_id}_{datetime.now().strftime('%H%M%S')}.txt"
     with open(debug_file, 'w', encoding='utf-8') as f:
         f.write(response_content)
 
-    print(f"  总分: {overall_score}/10")
-    print(f"  提取到 {len(dimension_scores)}/18 个维度分数")
-    print(f"  耗时: {time_cost:.2f}s")
-    print(f"  Token使用: {token_usage['total_tokens']} (Prompt: {token_usage['prompt_tokens']}, Completion: {token_usage['completion_tokens']})")
-    print(f"  原始响应已保存: {debug_file}")
+    print(f"  Overall score: {overall_score}/10")
+    print(f"  Extracted {len(dimension_scores)}/18 dimension scores")
+    print(f"  Time: {time_cost:.2f}s")
+    print(f"  Token usage: {token_usage['total_tokens']} (Prompt: {token_usage['prompt_tokens']}, Completion: {token_usage['completion_tokens']})")
+    print(f"  Raw response saved to: {debug_file}")
 
     return {
         "eval_id": eval_id,
@@ -383,19 +383,19 @@ def evaluate_pair(source_path, decompiled_path, eval_id):
 import argparse
 
 def run_test():
-    """运行完整的测试"""
+    """Run the built-in evaluation mode."""
     parser = argparse.ArgumentParser(description="Readability Evaluation")
     parser.add_argument("source_file", nargs="?", help="Path to source C file")
     parser.add_argument("decompiled_file", nargs="?", help="Path to decompiled C file")
     args = parser.parse_args()
 
-    # 获取 LLM 客户端
+    # Initialize the LLM client
     client = get_llm_client()
 
     print("="*80)
-    print("代码可读性评估测试")
+    print("Readability Evaluation")
     print("="*80)
-    print(f"模型: {client.model}")
+    print(f"Model: {client.model}")
 
     if args.source_file and args.decompiled_file:
         # Single pair evaluation mode: emit the canonical per-task payload used by the main pipeline.
@@ -408,31 +408,31 @@ def run_test():
         results = evaluate_readability(source_file, decompiled_file, eval_id, RESULTS_DIR)
     else:
         # Default test mode (legacy)
-        print(f"源码: {SOURCE_FILE}")
+        print(f"Source: {SOURCE_FILE}")
         print()
     
-        # 测试文件路径
-        # 使用 arm64 架构的文件 (根据现有文件结构)
+        # Test file paths
+        # Use arm64 files to match the current repository layout
         o0_debug = f"{PROJECT_ROOT}/decompiled/ghidra_out/arm64/1/1_gcc_O0_g.c"
         o2_debug = f"{PROJECT_ROOT}/decompiled/ghidra_out/arm64/1/1_gcc_O2_g.c"
         o0_nodebug = f"{PROJECT_ROOT}/decompiled/ghidra_out/arm64/1/1_gcc_O0_no_g.c"
     
-        # 对照组1: O0 vs O2 (优化对比)
+        # Control group 1: O0 vs O2
         print("-"*80)
-        print("对照组1: O0 vs O2 (Debug)")
+        print("Control Group 1: O0 vs O2 (Debug)")
         print("-"*80)
     
         result1 = evaluate_pair(SOURCE_FILE, o0_debug, "O0_debug")
         result2 = evaluate_pair(SOURCE_FILE, o2_debug, "O2_debug")
     
-        # 对照组2: Debug vs Non-debug (符号对比)
+        # Control group 2: Debug vs Non-debug
         print("\n" + "-"*80)
-        print("对照组2: Debug vs Non-Debug (O0)")
+        print("Control Group 2: Debug vs Non-Debug (O0)")
         print("-"*80)
     
         result3 = evaluate_pair(SOURCE_FILE, o0_nodebug, "O0_nondebug")
     
-        # 汇总结果
+        # Summarize results
         results = {
             "timestamp": datetime.now().isoformat(),
             "model": client.model,
@@ -454,7 +454,7 @@ def run_test():
             ]
         }
 
-    # 保存结果
+    # Persist results
     os.makedirs(RESULTS_DIR, exist_ok=True)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     result_file = f"{RESULTS_DIR}/test_results_{timestamp}.json"
@@ -462,9 +462,9 @@ def run_test():
     with open(result_file, 'w', encoding='utf-8') as f:
         json.dump(results, f, indent=2, ensure_ascii=False)
 
-    # 打印总结
+    # Print summary
     print("\n" + "="*80)
-    print("测试总结")
+    print("Summary")
     print("="*80)
 
     if args.source_file and args.decompiled_file:
@@ -475,10 +475,10 @@ def run_test():
             for r in group["results"]:
                 print(f'  {r["decompiled_name"]}: {r["overall_score"]}/10')
             if "expected" in group:
-                print(f'  期望: {group["expected"]}')
-                print(f'  验证: {"✓ 通过" if group["validation"] else "✗ 失败"}')
+                print(f'  Expected: {group["expected"]}')
+                print(f'  Validation: {"✓ pass" if group["validation"] else "✗ fail"}')
 
-    print(f"\n结果已保存: {result_file}")
+    print(f"\nResults saved to: {result_file}")
     print("="*80)
 
     return results
@@ -486,10 +486,10 @@ def run_test():
 if __name__ == "__main__":
     try:
         run_test()
-        print("\n✓ 测试完成!")
+        print("\n✓ Evaluation finished")
         sys.exit(0)
     except Exception as e:
-        print(f"\n✗ 错误: {e}")
+        print(f"\n✗ Error: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

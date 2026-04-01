@@ -1,56 +1,56 @@
 # Step2: Syntactic Correctness / Recompilation
 
-本目录是 BinBench 的 Step2 实现。
+This directory contains the Step2 implementation used by BinBench.
 
-公开版只保留当前主线所需的最新实现，不再保留历史迭代入口。
+Only the current mainline implementation is retained here; older historical entrypoints are removed.
 
-## 主入口
+## Main Entrypoint
 
 - `auto_fixer_v3.py`
 
-它负责完整的 LLM 修复循环：
+It drives the full LLM-based repair loop:
 
 ```text
-反编译代码
-  -> 尝试编译 / 链接
-  -> 解析错误
-  -> 调用 LLM 生成修复
-  -> 应用补丁
-  -> 再次编译 / 链接
+decompiled code
+  -> attempt compile / link
+  -> parse errors
+  -> call the LLM for a fix
+  -> apply the patch
+  -> compile / link again
 ```
 
-## 关键依赖
+## Key Dependencies
 
 - `utils/compiler.py`
-  - 解析和复用原始构建命令，执行编译与链接
+  - parses and reuses original build commands for compilation and linking
 - `utils/error_parser_v3.py`
-  - 提取编译/链接错误并做聚合
+  - extracts and aggregates compiler / linker errors
 - `utils/file_manager_v3.py`
-  - 备份源码、应用块级编辑补丁
+  - backs up source files and applies block-level edit patches
 - `utils/logger_v2.py`
-  - 记录修复历史并输出 `repair_trace.json`
+  - records repair history and writes `repair_trace.json`
 - `utils/llm_client.py`
-  - 统一 LLM 调用接口
+  - provides the unified LLM calling interface
 - `utils/trace_repair.py`
-  - 历史修复轨迹标准化工具
+  - normalizes historical repair traces
 
-## 主要输出
+## Main Outputs
 
-每个 task 的 Step2 输出位于：
+Each task writes Step2 outputs to:
 
 ```text
 results_<llm>_v4_full/<arch>/<src>/<bin_name>/<decompiler>/syntactic/
 ```
 
-核心产物：
+Core artifacts:
 
 - `repair_trace.json`
 - `compile_checkpoint.json`
 - `fix_<bin_name>.c`
 - `bin/<bin_name>_fixed`
 
-## 对外公开版说明
+## Notes
 
-- 历史入口 `auto_fixer.py` / `auto_fixer_v2.py` 已移除
-- 当前公开版只维护 `auto_fixer_v3.py` 这一条主线
-- 如果你从 `scripts/run_pipeline_in_docker.py` 或 `scripts/auto_eval.py` 进入，本目录会被自动调用，无需单独运行
+- Historical entrypoints `auto_fixer.py` and `auto_fixer_v2.py` have been removed
+- `auto_fixer_v3.py` is the only maintained Step2 mainline
+- If you enter through `scripts/run_pipeline_in_docker.py` or `scripts/auto_eval.py`, this directory is invoked automatically and does not need to be run separately
